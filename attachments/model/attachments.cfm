@@ -48,7 +48,7 @@
 			variables.wheels.class.callbacks.afterPostProcessing = [];
 		
 		// set callbacks for this property
-		beforeDelete(method="$deleteAttachments");
+		afterDelete(method="$deleteAttachments");
 		afterCreate(method="$saveAttachments");
 		beforeValidationOnUpdate(method="$saveAttachments");
 		jsonProperty(property=arguments.property, type="struct");
@@ -190,4 +190,73 @@
 		arguments.path = ReplaceNoCase(arguments.path, ":property", arguments.property, "one");
 	</cfscript>
 	<cfreturn arguments.path />
+</cffunction>
+
+<cffunction name="$deleteAttachments" access="public" output="false" returntype="boolean">
+	<cfscript>
+		var loc = { success=true };
+		
+		// loop over our attachements and upload each one
+		for (loc.attachment in variables.wheels.class.attachments)
+		{
+			loc.deleted = $deleteAttachment(property=loc.attachment);
+			
+			if (loc.success)
+				loc.success = loc.deleted;
+		}
+	</cfscript>
+	<cfreturn loc.success />
+</cffunction>
+
+<cffunction name="$deleteAttachment" access="public" output="false" returntype="boolean">
+	<cfargument name="property" type="string" required="true" />
+	<cfscript>
+		var loc = {};
+		
+		loc.attachment = variables.wheels.class.attachments[arguments.property];
+		
+		if (IsSimpleValue(this.file)) {
+			this.file = DeserializeJson(this.file);
+		}
+		loc.filePath = Replace(this.file.path, "\", "/", "all");
+		
+		this[loc.attachment.property] = $deleteFileFromStorage(source = loc.filePath, argumentCollection = loc.attachment);
+	</cfscript>
+	<cfreturn true />
+</cffunction>
+
+<cffunction name="$deleteFileFromStorage" access="public" output="false" returntype="struct">
+	<cfargument name="source" type="string" required="true" />
+	<cfargument name="property" type="string" required="true" />
+	<cfargument name="url" type="string" required="true" />
+	<cfargument name="path" type="string" required="true" />
+	<cfargument name="storage" type="string" required="true" />
+	<cfscript>
+		var loc = {};
+		
+		arguments.fileName = ListLast(arguments.source, "/");
+		arguments.path = $createAttachmentPath(argumentCollection=arguments);
+		arguments.url = $createAttachmentPath(argumentCollection=arguments);
+		arguments.storage = ListToArray(ReplaceList(arguments.storage, "filesystem,s3", "FileSystem,S3"));
+		
+		for (loc.storageType in arguments.storage)
+		{
+			if (!StructKeyExists(request, "storage") || !StructKeyExists(request.storage, loc.storageType))
+				request.storage[loc.storageType] = $createObjectFromRoot(
+					  path = "plugins.attachments.storage"
+					, fileName = loc.storageType
+					, method = "init");
+			
+			loc.pathListLen = ListLen(arguments.path, "/\");
+			loc.path = "";
+			for (loc.i = 1; loc.i < loc.pathListLen; loc.i++)
+			{
+				loc.path = ListAppend(loc.path, ListGetAt(arguments.path, loc.i, "/\"), "/");
+			}
+			loc.path = "/#loc.path#/";
+			
+			request.storage[loc.storageType].delete(path=loc.path, directory=true, recursive=true);
+		}
+	</cfscript>
+	<cfreturn arguments />
 </cffunction>

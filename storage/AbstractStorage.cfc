@@ -13,6 +13,8 @@
 
 	<cffunction name="delete" access="public" description="Delete a file from the storage mechanism." output="false" returntype="boolean">
 		<cfargument name="path" type="string" required="true" />
+		<cfargument name="directory" type="boolean" required="false" default="false">
+		<cfargument name="recursive" type="boolean" required="false" default="false">
 	</cffunction>
 
 </cfinterface>
