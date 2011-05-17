@@ -30,10 +30,19 @@
 	
 	<cffunction name="delete" access="public" output="false" returntype="boolean">
 		<cfargument name="path" type="string" required="true" />
+		<cfargument name="directory" type="boolean" required="false" default="false">
+		<cfargument name="recursive" type="boolean" required="false" default="false">
 		<cfscript>
 			try
 			{
-				FileDelete(ExpandPath(arguments.path));
+				if (arguments.directory)
+				{
+					DirectoryDelete(ExpandPath(arguments.path), arguments.recursive);
+				}
+				else
+				{
+					FileDelete(ExpandPath(arguments.path));
+				}
 			}
 			catch (Any e)
 			{

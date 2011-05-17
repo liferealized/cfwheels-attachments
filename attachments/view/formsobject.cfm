@@ -21,8 +21,9 @@
 			loc.args.id = $tagId(arguments.objectName, loc.property);
 		
 		// create the name and value for our hidden tag
-		loc.args.name = $tagName(arguments.objectName, loc.property);
-		loc.args.value = $tagName(arguments.objectName, arguments.property);
+		loc.objectName = $objectName(argumentCollection=arguments);
+		loc.args.name = $tagName(loc.objectName, loc.property);
+		loc.args.value = $tagName(loc.objectName, arguments.property);
 		
 		loc.returnValue &= hiddenFieldTag(argumentCollection=loc.args);
 		loc.returnValue &= coreFileField(argumentCollection=arguments);
