@@ -215,10 +215,10 @@
 		
 		loc.attachment = variables.wheels.class.attachments[arguments.property];
 		
-		if (IsSimpleValue(this.file)) {
-			this.file = DeserializeJson(this.file);
+		if (IsSimpleValue(this[loc.attachment.property])) {
+			this[loc.attachment.property] = DeserializeJson(this[loc.attachment.property]);
 		}
-		loc.filePath = Replace(this.file.path, "\", "/", "all");
+		loc.filePath = Replace(this[loc.attachment.property].path, "\", "/", "all");
 		
 		this[loc.attachment.property] = $deleteFileFromStorage(source = loc.filePath, argumentCollection = loc.attachment);
 	</cfscript>
