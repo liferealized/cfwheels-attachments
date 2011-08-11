@@ -47,7 +47,10 @@
 			// check to make sure we don't have a bad file
 			if ($validateAttachmentFileType(loc.file.ServerFileExt, loc.attachment.blockExtensions, loc.attachment.allowExtensions))
 			{
-				this[loc.attachment.property] = $saveFileToStorage(source=loc.filePath, argumentCollection=loc.attachment);
+				this[loc.attachment.property] = $saveFileToStorage(
+					  argumentCollection=loc.attachment
+					, source=loc.filePath
+					, fileSize=loc.file.FileSize);
 				
 				if (IsImageFile(loc.filePath) && StructCount(loc.attachment.styles))
 				{
@@ -78,12 +81,6 @@
 		loc.resizeArgs = {
 			name=loc.image
 		};
-		
-		
-		/*writeDump(var=arguments);
-		if (arguments.style == "medium") {
-			abort;
-		}*/
 		
 		// If image is larger than resize specifications, resize it
 		if (loc.image.width > loc.style.width || loc.image.height > loc.style.height)
@@ -144,6 +141,7 @@
 	<cfargument name="url" type="string" required="true" />
 	<cfargument name="path" type="string" required="true" />
 	<cfargument name="storage" type="string" required="true" />
+	<cfargument name="fileSize" type="numeric" required="true" />
 	<cfscript>
 		var loc = {};
 		
@@ -151,6 +149,7 @@
 		arguments.path = $createAttachmentPath(argumentCollection=arguments);
 		arguments.url = $createAttachmentPath(argumentCollection=arguments);
 		arguments.storage = ListToArray(ReplaceList(arguments.storage, "filesystem,s3", "FileSystem,S3"));
+		arguments.fileSize = arguments.fileSize;
 		
 		for (loc.storageType in arguments.storage)
 		{
