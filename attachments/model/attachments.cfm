@@ -8,8 +8,8 @@
 	<cfargument name="path" type="string" required="false" default="/files/attachments/:model/:property/:id/:style/:filename" />
 	<cfargument name="styles" type="string" required="false" default="" hint="You may pass in multiple styles. The syntax is `nameOfStyle:widthxheight>`. An actual example would be `small:150x150>,medium:300x300>`. The greater than sign at the end means that the attchments plugin should keep the aspect ratio of the photo uploaded. Styles will only be run on images that your ColdFusion server can do processing on." />
 	<cfargument name="storage" type="string" required="false" default="filesystem" hint="Other options include `s3` and `filesystem,s3`." />
+	<cfargument name="blockExtensions" type="string" required="false" default="cfm,cfml,cfc,dbm,jsp,asp,aspx,exe,php,cgi,shtml" hint="List of file extensions to not allow. This is the default behavior unless overridden by `allowExtensions`. If `allowExtensions` is set, this argument is then ignored." />
 	<cfargument name="allowExtensions" type="string" required="false" default="" hint="List of file extensions to allow. If this is set, the `blockExtensions` argument is ignored." />
-	<cfargument name="blockExtensions" type="string" required="false" default="cfm,cfml,cfc,dbm,jsp,asp,aspx,exe,php,cgi,shtml" hint="List of file extensions to not allow. If `allowExtensions` is set, this argument is ignored." />
 	<cfscript>
 		var loc = {};
 		
