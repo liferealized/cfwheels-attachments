@@ -1,7 +1,7 @@
 <cffunction name="$saveAttachments" access="public" output="false" returntype="boolean">
 	<cfscript>
 		var loc = { success = true };
-		
+
 		if (!FindNoCase("multipart", cgi.content_type))
 			return false;
 			
@@ -9,7 +9,7 @@
 		{
 			if (!StructKeyExists(variables, "$persistedProperties") || !StructKeyExists(variables.$persistedProperties, ListFirst(primaryKey())))
 				$updatePersistedProperties();
-			
+
 			// loop over our attachements and upload each one
 			for (loc.attachment in variables.wheels.class.attachments)
 			{
@@ -22,6 +22,49 @@
 			variables.wheels.instance.attachmentsSaved = true;
 			
 			if (loc.success)
+			{
+				this.save();
+				this.reload();
+			}
+		}
+	</cfscript>
+	<cfreturn loc.success />
+</cffunction>
+
+<cffunction name="$updateAttachments" access="public" output="false" returntype="boolean">
+	<cfscript>
+		var loc = { success = true };
+
+		if (!FindNoCase("multipart", cgi.content_type))
+			return false;
+			
+		if (!StructKeyExists(variables.wheels.instance, "attachmentsSaved"))
+		{
+			if (!StructKeyExists(variables, "$persistedProperties") || !StructKeyExists(variables.$persistedProperties, ListFirst(primaryKey())))
+				$updatePersistedProperties();
+
+			// loop over our attachements and upload each one
+			for (loc.attachment in variables.wheels.class.attachments)
+			{
+				if (StructKeyExists(this, loc.attachment & "$attachment") && Len(form[this[loc.attachment & "$attachment"]]))
+				{
+					loc.attempted = true;
+					loc.saved = $saveAttachment(property=loc.attachment);
+				}
+				else
+				{
+					loc.attempted = false;
+					this[loc.attachment] = this.changedFrom(loc.attachment);
+					loc.saved = false;
+				}
+				
+				if (loc.success)
+					loc.success = !loc.attempted || loc.saved;
+			}
+			
+			variables.wheels.instance.attachmentsSaved = true;
+			
+			if (loc.saved)
 			{
 				this.save();
 				this.reload();
@@ -51,7 +94,7 @@
 					  argumentCollection=loc.attachment
 					, source=loc.filePath
 					, fileSize=loc.file.FileSize);
-				
+	
 				if (IsImageFile(loc.filePath) && StructCount(loc.attachment.styles))
 				{
 					for (loc.style in loc.attachment.styles)

@@ -50,9 +50,9 @@
 			variables.wheels.class.callbacks.afterPostProcessing = [];
 		
 		// set callbacks for this property
-		afterDelete(method="$deleteAttachments");
-		afterCreate(method="$saveAttachments");
-		beforeValidationOnUpdate(method="$saveAttachments");
+		afterDelete("$deleteAttachments");
+		afterCreate("$saveAttachments");
+		beforeValidationOnUpdate("$updateAttachments");
 		jsonProperty(property=arguments.property, type="struct");
 	</cfscript>
 </cffunction>
