@@ -11,7 +11,7 @@
 	<cfset $registerValidation(methods="$validatesAttachmentPresenceOf", argumentCollection=arguments) />
 </cffunction>
 
-<cffunction name="$validatesAttachmentPresenceOf" access="public" output="false" returntype="void" mixin="model">
+<cffunction name="$validatesAttachmentPresenceOf" access="public" output="false" returntype="boolean" mixin="model">
 	<cfscript>
 		var returnValue = false;
 		// if the property does not exist 

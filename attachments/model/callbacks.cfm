@@ -1,7 +1,7 @@
 <cffunction name="$saveAttachments" access="public" output="false" returntype="boolean">
 	<cfscript>
 		var loc = { success = true };
-		
+
 		if (!FindNoCase("multipart", cgi.content_type))
 			return false;
 			
@@ -9,7 +9,7 @@
 		{
 			if (!StructKeyExists(variables, "$persistedProperties") || !StructKeyExists(variables.$persistedProperties, ListFirst(primaryKey())))
 				$updatePersistedProperties();
-			
+
 			// loop over our attachements and upload each one
 			for (loc.attachment in variables.wheels.class.attachments)
 			{
@@ -22,6 +22,49 @@
 			variables.wheels.instance.attachmentsSaved = true;
 			
 			if (loc.success)
+			{
+				this.save();
+				this.reload();
+			}
+		}
+	</cfscript>
+	<cfreturn loc.success />
+</cffunction>
+
+<cffunction name="$updateAttachments" access="public" output="false" returntype="boolean">
+	<cfscript>
+		var loc = { success = true };
+
+		if (!FindNoCase("multipart", cgi.content_type))
+			return false;
+			
+		if (!StructKeyExists(variables.wheels.instance, "attachmentsSaved"))
+		{
+			if (!StructKeyExists(variables, "$persistedProperties") || !StructKeyExists(variables.$persistedProperties, ListFirst(primaryKey())))
+				$updatePersistedProperties();
+
+			// loop over our attachements and upload each one
+			for (loc.attachment in variables.wheels.class.attachments)
+			{
+				if (StructKeyExists(this, loc.attachment & "$attachment") && Len(form[this[loc.attachment & "$attachment"]]))
+				{
+					loc.attempted = true;
+					loc.saved = $saveAttachment(property=loc.attachment);
+				}
+				else
+				{
+					loc.attempted = false;
+					this[loc.attachment] = this.changedFrom(loc.attachment);
+					loc.saved = false;
+				}
+				
+				if (loc.success)
+					loc.success = !loc.attempted || loc.saved;
+			}
+			
+			variables.wheels.instance.attachmentsSaved = true;
+			
+			if (loc.saved)
 			{
 				this.save();
 				this.reload();
@@ -47,11 +90,13 @@
 			// check to make sure we don't have a bad file
 			if ($validateAttachmentFileType(loc.file.ServerFileExt, loc.attachment.blockExtensions, loc.attachment.allowExtensions))
 			{
-				this[loc.attachment.property] = $saveFileToStorage(source=loc.filePath, argumentCollection=loc.attachment);
-				
+				this[loc.attachment.property] = $saveFileToStorage(
+					  argumentCollection=loc.attachment
+					, source=loc.filePath
+					, fileSize=loc.file.FileSize);
+	
 				if (IsImageFile(loc.filePath) && StructCount(loc.attachment.styles))
 				{
-					// not implemented
 					for (loc.style in loc.attachment.styles)
 						this[loc.attachment.property].styles[loc.style] = $saveImageFileWithStyle(source=loc.filePath, argumentCollection=loc.attachment, style=loc.style);
 				}
@@ -68,13 +113,60 @@
 </cffunction>
 
 <cffunction name="$saveImageFileWithStyle" access="public" output="false" returntype="struct">
-	<!--- TBD --->
+	<cfargument name="source" type="string" required="true" hint="Source of original image to resize." />
+	<cfargument name="style" type="string" required="true" hint="Name of style to save." />
+	<cfscript>
+		var loc = {};
+		loc.style = arguments.styles[arguments.style];
+		loc.image = ImageRead(ExpandPath(this.file.url));
+		loc.largerDimension = loc.image.height > loc.image.width ? "height" : "width";
+		loc.smallerDimension = loc.largerDimension == "width" ? "height" : "width";
+		loc.resizeArgs = {
+			name=loc.image
+		};
+		
+		// If image is larger than resize specifications, resize it
+		if (loc.image.width > loc.style.width || loc.image.height > loc.style.height)
+		{
+			// If we're preserving same aspect ratio
+			if (loc.style.preserveAspect)
+			{
+				// Determine which dimension to use for resize
+				// Note: `ImageScaleToFit` doesn't accept an `argumentCollection` on Railo 3.3, so we need to decide with an `if` block
+				if (loc.largerDimension == "width")
+					ImageScaleToFit(loc.image, loc.style[loc.largerDimension], "");
+				else
+					ImageScaleToFit(loc.image, "", loc.style[loc.largerDimension]);
+			}
+			// If we're not preserving same aspect ratio
+			else
+			{
+				// Determine which dimension to use for resize
+				// Note: See note above about `ImageScaleToFit`
+				if (loc.smallerDimension == "width")
+					ImageScaleToFit(loc.image, loc.style[loc.smallerDimension], "");
+				else
+					ImageScaleToFit(loc.image, "", loc.style[loc.smallerDimension]);
+				
+				// Crop excess
+				loc.newWidth = loc.image.width < loc.style.width ? loc.image.width : loc.style.width;
+				loc.newHeight = loc.image.height < loc.style.height ? loc.image.height : loc.style.height;
+				ImageCrop(loc.image, 0, 0, loc.newWidth, loc.newHeight);
+			}
+		}
+		
+		// Build path for style file and write file
+		return $saveImageToStorage(
+			  argumentCollection=arguments
+			, image=loc.image
+			, style=arguments.style);
+	</cfscript>
 </cffunction>
 
 <cffunction name="$saveFileToTempDirectory" access="public" output="false" returntype="struct">
 	<cfargument name="property" type="string" required="true" />
 	<cfscript>
-		// set the file in a temp location to verify it's not evil
+		// Set the file in a temp location to verify it's not evil
 		var fileArgs = {
 			  action = "upload"
 			, fileField = this[arguments.property & "$attachment"]
@@ -92,6 +184,7 @@
 	<cfargument name="url" type="string" required="true" />
 	<cfargument name="path" type="string" required="true" />
 	<cfargument name="storage" type="string" required="true" />
+	<cfargument name="fileSize" type="numeric" required="true" />
 	<cfscript>
 		var loc = {};
 		
@@ -99,6 +192,7 @@
 		arguments.path = $createAttachmentPath(argumentCollection=arguments);
 		arguments.url = $createAttachmentPath(argumentCollection=arguments);
 		arguments.storage = ListToArray(ReplaceList(arguments.storage, "filesystem,s3", "FileSystem,S3"));
+		arguments.fileSize = arguments.fileSize;
 		
 		for (loc.storageType in arguments.storage)
 		{
@@ -112,6 +206,46 @@
 		}
 		
 		StructDelete(arguments, "source", false);
+		StructDelete(arguments, "allowExtensions");
+		StructDelete(arguments, "blockExtensions");
+	</cfscript>
+	<cfreturn arguments />
+</cffunction>
+
+<cffunction name="$saveImageToStorage" access="public" output="false" returntype="struct">
+	<cfargument name="image" required="true" hint="Image object to save." />
+	<cfargument name="property" type="string" required="true" hint="Property to store metadata to." />
+	<cfargument name="url" type="string" required="true" hint="URL pattern." />
+	<cfargument name="path" type="string" required="true" hint="Path pattern." />
+	<cfargument name="storage" type="string" required="true" hint="Storage." />
+	<cfargument name="style" type="string" required="true" hint="Style name." />
+	<cfscript>
+		var loc = {};
+		
+		arguments.fileName = ListLast(arguments.image.source, "/\");
+		arguments.path = $createAttachmentPath(argumentCollection=arguments);
+		arguments.url = $createAttachmentPath(argumentCollection=arguments);
+		arguments.storage = ListToArray(ReplaceList(arguments.storage, "filesystem,s3", "FileSystem,S3"));
+		arguments.source = GetTempDirectory() & arguments.fileName;
+		
+		ImageWrite(arguments.image, arguments.source);
+		
+		for (loc.storageType in arguments.storage)
+		{
+			if (!StructKeyExists(request, "storage") || !StructKeyExists(request.storage, loc.storageType))
+				request.storage[loc.storageType] = $createObjectFromRoot(
+					  path = "plugins.attachments.storage"
+					, fileName = loc.storageType
+					, method = "init");
+				
+			request.storage[loc.storageType].write(source=arguments.source, path=arguments.path);
+		}
+		
+		StructDelete(arguments, "source", false);
+		StructDelete(arguments, "allowExtensions");
+		StructDelete(arguments, "blockExtensions");
+		StructDelete(arguments, "image");
+		StructDelete(arguments, "styles");
 	</cfscript>
 	<cfreturn arguments />
 </cffunction>
