@@ -49,7 +49,9 @@
 				if (StructKeyExists(this, loc.attachment & "$attachment") && Len(form[this[loc.attachment & "$attachment"]]))
 				{
 					loc.attempted = true;
-					loc.saved = $saveAttachment(property=loc.attachment);
+					this[loc.attachment & "_old"] = this.changedFrom(loc.attachment);
+					$deleteAttachment(loc.attachment & "_old", variables.wheels.class.attachments[loc.attachment]);
+					loc.saved = $saveAttachment(loc.attachment);
 				}
 				else
 				{
@@ -118,7 +120,7 @@
 	<cfscript>
 		var loc = {};
 		loc.style = arguments.styles[arguments.style];
-		loc.image = ImageRead(ExpandPath(this.file.url));
+		loc.image = ImageRead(ExpandPath(this[arguments.property].url));
 		loc.largerDimension = loc.image.height > loc.image.width ? "height" : "width";
 		loc.smallerDimension = loc.largerDimension == "width" ? "height" : "width";
 		loc.resizeArgs = {
@@ -274,7 +276,7 @@
 	<cfscript>
 		var loc = { success=true };
 		
-		// loop over our attachements and upload each one
+		// loop over our attachments and delete each one
 		for (loc.attachment in variables.wheels.class.attachments)
 		{
 			loc.deleted = $deleteAttachment(property=loc.attachment);
@@ -287,18 +289,17 @@
 </cffunction>
 
 <cffunction name="$deleteAttachment" access="public" output="false" returntype="boolean">
-	<cfargument name="property" type="string" required="true" />
+	<cfargument name="property" type="string" required="true" hint="Name of property to reference for file deletion." />
+	<cfargument name="attachmentConfig" type="struct" required="false" default="#variables.wheels.class.attachments[arguments.property]#" hint="Attachment config to reference." />
 	<cfscript>
 		var loc = {};
 		
-		loc.attachment = variables.wheels.class.attachments[arguments.property];
+		if (IsSimpleValue(this[arguments.property]) && IsJson(this[arguments.property]))
+			this[arguments.property] = DeserializeJson(this[arguments.property]);
+
+		loc.filePath = Replace(this[arguments.property].path, "\", "/", "all");
 		
-		if (IsSimpleValue(this.file)) {
-			this.file = DeserializeJson(this.file);
-		}
-		loc.filePath = Replace(this.file.path, "\", "/", "all");
-		
-		this[loc.attachment.property] = $deleteFileFromStorage(source = loc.filePath, argumentCollection = loc.attachment);
+		this[arguments.attachmentConfig.property] = $deleteFileFromStorage(source=loc.filePath, argumentCollection=arguments.attachmentConfig);
 	</cfscript>
 	<cfreturn true />
 </cffunction>
