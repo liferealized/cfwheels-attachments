@@ -1,7 +1,7 @@
 <cfsetting enablecfoutputonly="true" />
 
 <cfset attachments = {}>
-<cfset attachments.version = "0.5">
+<cfset attachments.version = "0.6">
 
 <cfinclude template="stylesheets/doc_styles.cfm" />
 
@@ -25,13 +25,18 @@
 <p>You must also install the JSON Properties plugin for the Attachments plugin to work.</p>
 
 <h2>Usage</h2>
-<p>Call the included <tt>hasAttachment()</tt> from a model's <tt>init()</tt> method to bind one or more properties to handle uploaded files.</p>
+
+<h3>Model Configuration</h3>
+<p>
+	Call the included <tt>hasAttachment()</tt> from a model's <tt>init()</tt> method to bind one or more properties to handle uploaded
+	files.
+</p>
 <p>
 	The plugin stores data about the uploaded files as serialized JSON data in your model, so you should set the configured property's
 	corresponding database column to a type of <tt>TEXT</tt> or similar.
 </p>
 
-<h3>Arguments</h3>
+<h4><tt>hasAttachment()</tt> Arguments</h4>
 <table>
 	<thead>
 		<tr>
@@ -95,7 +100,7 @@
 	</tbody>
 </table>
 
-<h3>Callbacks</h3>
+<h4>Callbacks</h4>
 <p>
 	This plugin adds its own callbacks to the model's callback chain.
 </p>
@@ -119,9 +124,9 @@
 	<tt><a href="http://cfwheels.org/docs/function/afterUpdate">afterUpdate</a></tt>.
 </p>
 
-<h2>Examples</h2>
+<h4>Examples</h4>
 
-<h3>Example 1: Simple configuration</h3>
+<h5>Example 1: Simple configuration</h5>
 <p>
 	In its most simple form, let's pretend that you want to save files to a property in the <tt>comment</tt> model called <tt>attachment</tt>:
 </p>
@@ -163,7 +168,7 @@
 	&lt;p&gt;&lt;a href=&quot;##comment.attachment.url##&quot;&gt;Download the File&lt;/a&gt;&lt;/p&gt;
 &lt;/cfoutput&gt;</pre>
 
-<h3>Example 2: Saving to a different location</h3>
+<h5>Example 2: Saving to a different location</h5>
 <p>
 	If you want to store the file in a different location on the server, you can specify the path using the <tt>:path</tt>
 	argument and the placeholders for <tt>:model</tt>, <tt>:property</tt>, <tt>:id</tt>, <tt>:style</tt> (more on this
@@ -189,7 +194,7 @@
 	&lt;/cffunction&gt;
 &lt;/cfcomponent&gt;</pre>
 
-<h3>Example 3: Styles for images</h3>
+<h5>Example 3: Styles for images</h5>
 <p>
 	The attachments plugin will also handle the creation of &quot;styles&quot; for image files uploaded to your model.
 	If you choose, you can create any named style that you would like (for example, <tt>thumbnail</tt>).
@@ -239,7 +244,7 @@
 	</li>
 </ul>
 
-<h3>Example 4: Whitelisting files</h3>
+<h5>Example 4: Whitelisting files</h5>
 <p>
 	By default, the Attachments plugin will block a list of potentially malicious files (using a default value for the
 	<tt>blockExtensions</tt> argument). But it is strongly recommended for security reasons that you define a whitelist of
@@ -259,6 +264,59 @@
 <p>
 	Note that when the <tt>allowExtensions</tt> list is provided, the <tt>blockExtensions</tt> list will be ignored completely.
 </p>
+
+<h3>View Helper for Images</h3>
+
+<p>
+	The plugin also modifies the Wheels <tt>imageTag()</tt> method to accept 2 additional arguments. These arguments help you
+	work with images uploaded as attachments and any associated styles that you may have configured for the images.
+</p>
+<table>
+	<thead>
+		<tr>
+			<th>Argument</th>
+			<th>Type</th>
+			<th>Required</th>
+			<th>Default</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><tt>attachment</tt></td>
+			<td>string/struct</td>
+			<td><tt>false</tt></td>
+			<td><tt>[empty&nbsp;string]</tt></td>
+			<td>Value of attachment property. Accepts both JSON- and struct-formatted data.</td>
+		</tr>
+		<tr class="highlight">
+			<td><tt>attachmentStyle</tt></td>
+			<td>string</td>
+			<td><tt>false</tt></td>
+			<td><tt>[empty&nbsp;string]</tt></td>
+			<td>Image style to reference (as configured in <tt>hasAttachment()</tt>'s <tt>styles</tt> argument.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h4>Examples</h4>
+
+<h5>Example 1: Simple image call</h5>
+<p>Given that there is an attachment property called <tt>attachment</tt> on the <tt>user</tt> model:</p>
+<pre>
+&lt;cfoutput&gt;
+	##imageTag(attachment=user.attachment)##
+&lt;/cfoutput&gt;</pre>
+
+<h5>Example 2: Stylized image call</h5>
+<p>
+	Given that there is an attachment property called <tt>avatar</tt> on the <tt>profile</tt> model with a style called
+	<tt>medium</tt>:
+</p>
+<pre>
+&lt;cfoutput&gt;
+	##imageTag(attachment=profile.attachment, style="medium")##
+&lt;/cfoutput&gt;</pre>
 
 <h2>Uninstallation</h2>
 <p>To uninstall this plugin, simply delete the <tt>/plugins/Attachments-#attachments.version#.zip</tt> file.</p>
