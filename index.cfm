@@ -1,7 +1,7 @@
 <cfsetting enablecfoutputonly="true" />
 
 <cfset attachments = {}>
-<cfset attachments.version = "0.6">
+<cfset attachments.version = "0.7">
 
 <cfinclude template="stylesheets/doc_styles.cfm" />
 
@@ -10,7 +10,7 @@
 <h1>Attachments v#attachments.version#</h1>
 
 <p>
-	Add support for uploaded files to your model with the <tt>hasAttachment()</tt> function.
+	Add support for file uploads to your model with the <tt>hasAttachment()</tt> function. Also provides <tt>attachmentImageTag()</tt> and <tt>attachmentLinkTo()</tt> view helpers.
 </p>
 <p>
 	Automatically resize uploaded images to a set of &quot;styles&quot; that you define. (For example, you could automatically
@@ -265,11 +265,16 @@
 	Note that when the <tt>allowExtensions</tt> list is provided, the <tt>blockExtensions</tt> list will be ignored completely.
 </p>
 
-<h3>View Helper for Images</h3>
-
+<h3>View Helpers</h3>
 <p>
-	The plugin also modifies the Wheels <tt>imageTag()</tt> method to accept 2 additional arguments. These arguments help you
-	work with images uploaded as attachments and any associated styles that you may have configured for the images.
+	The plugin also provides helpers&mdash;<tt>attachmentImageTag()</tt> and <tt>attachmentLinkTo()</tt>&mdash;for displaying
+	images and linking to files uploaded via attachments.
+</p>
+
+<h3>Displaying Images via <tt>attachmentImageTag()</tt></h3>
+<p>
+	<tt>attachmentImageTag()</tt> allows you to display an image uploaded via the Attachments plugin. It optionally allows you
+	to specify any style generated when the attachment was uploaded and handles all of the data references for you.
 </p>
 <table>
 	<thead>
@@ -294,7 +299,7 @@
 			<td>string</td>
 			<td><tt>false</tt></td>
 			<td><tt>[empty&nbsp;string]</tt></td>
-			<td>Image style to reference (as configured in <tt>hasAttachment()</tt>'s <tt>styles</tt> argument.</td>
+			<td>Name of image style to reference (as configured in <tt>hasAttachment()</tt>'s <tt>styles</tt> argument.</td>
 		</tr>
 	</tbody>
 </table>
@@ -304,18 +309,101 @@
 <h5>Example 1: Simple image call</h5>
 <p>Given that there is an attachment property called <tt>attachment</tt> on the <tt>user</tt> model:</p>
 <pre>
-&lt;cfoutput&gt;
-	##imageTag(attachment=user.attachment)##
-&lt;/cfoutput&gt;</pre>
-
-<h5>Example 2: Stylized image call</h5>
+// In the `init()` method of `models/User.cfc`
+hasAttachment(property="attachment", allowExtensions=GetReadableImageFormats());</pre>
 <p>
-	Given that there is an attachment property called <tt>avatar</tt> on the <tt>profile</tt> model with a style called
-	<tt>medium</tt>:
+	You can display uploaded images like so:
 </p>
 <pre>
 &lt;cfoutput&gt;
-	##imageTag(attachment=profile.attachment, style="medium")##
+	##attachmentImageTag(attachment=user.attachment)##
+&lt;/cfoutput&gt;</pre>
+
+<h5>Example 2: Display stylized image</h5>
+<p>
+	Given that there is an attachment property called <tt>avatar</tt> on the <tt>profile</tt> model with a style called
+	<tt>small</tt>:
+</p>
+<pre>
+// In the `init()` method of `models/Profile.cfc`
+##hasAttachment(property=&quot;avatar&quot;, styles=&quot;small:100x100&quot;, allowExtensions=GetReadableImageFormats())##</pre>
+<p>
+	You can display the stylized image like so:
+</p>
+<pre>
+&lt;cfoutput&gt;
+	##attachmentImageTag(attachment=profile.avatar, attachmentStyle=&quot;small&quot;)##
+&lt;/cfoutput&gt;</pre>
+
+<h3>Linking to Files via <tt>attachmentLinkTo()</tt></h3>
+<p>
+	Similar to <tt>attachmentImageTag()</tt>, <tt>attachmentLinkTo()</tt> allows you to link to a file uploaded via this
+	plugin, also optionally with image styles.
+</p>
+<table>
+	<thead>
+		<tr>
+			<th>Argument</th>
+			<th>Type</th>
+			<th>Required</th>
+			<th>Default</th>
+			<th>Description</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td><tt>text</tt></td>
+			<td>string</td>
+			<td><tt>false</tt></td>
+			<td><tt>[empty&nbsp;string]</tt></td>
+			<td>Link text. If left blank, the path to the attachment file is used as the link text.</td>
+		</tr>
+		<tr class="highlight">
+			<td><tt>attachment</tt></td>
+			<td>string/struct</td>
+			<td><tt>false</tt></td>
+			<td><tt>[empty&nbsp;string]</tt></td>
+			<td>Value of attachment property. Accepts both JSON- and struct-formatted data.</td>
+		</tr>
+		<tr>
+			<td><tt>attachmentStyle</tt></td>
+			<td>string</td>
+			<td><tt>false</tt></td>
+			<td><tt>[empty&nbsp;string]</tt></td>
+			<td>Name of image style to reference (as configured in <tt>hasAttachment()</tt>'s <tt>styles</tt> argument.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h4>Examples</h4>
+
+<h5>Example 1: Simple link</h5>
+<p>Given that there is an attachment property called <tt>documentation</tt> on the <tt>equipment</tt> model:</p>
+<pre>
+// In the `init()` method of `models/Equipment.cfc`
+##hasAttachment(property=&quot;documentation&quot;)##</pre>
+<p>
+	You can link to the file in your view like this:
+</p>
+<pre>
+&lt;cfoutput&gt;
+	##attachmentLinkTo(text=&quot;Download the Manual&quot;, attachment=equipment.documentation)##
+&lt;/cfoutput&gt;</pre>
+
+<h5>Example 2: Link directly to a stylized image</h5>
+<p>
+	Given that there is an attachment property called <tt>photo</tt> on the <tt>person</tt> model with a style of
+	<tt>medium</tt>:
+</p>
+<pre>
+// In the `init()` method of `models/Person.cfc`
+##hasAttachment(property=&quot;photo&quot;, styles=&quot;medium:300x300&gt;,avatar:100x100&quot;, allowExtensions=GetReadableImageFormats())##</pre>
+<p>
+	You can link to the stylized image in your view like so:
+</p>
+<pre>
+&lt;cfoutput&gt;
+	##attachmentLinkTo(text=&quot;Download Photo&quot;, attachment=person.photo, attachmentStyle=&quot;medium&quot;)##
 &lt;/cfoutput&gt;</pre>
 
 <h2>Uninstallation</h2>
