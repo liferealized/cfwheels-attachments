@@ -5,7 +5,7 @@
 		if (!FindNoCase("multipart", cgi.content_type))
 			return false;
 			
-		if (!StructKeyExists(variables.wheels.instance, "attachmentsSaved"))
+		if (!StructKeyExists(variables.wheels, "instance") || !StructKeyExists(variables.wheels.instance, "attachmentsSaved"))
 		{
 			if (!StructKeyExists(variables, "$persistedProperties") || !StructKeyExists(variables.$persistedProperties, ListFirst(primaryKey())))
 				$updatePersistedProperties();
@@ -176,8 +176,26 @@
 			, result = "returnValue"
 			, nameconflict = "overwrite"
 		};
+
+		try
+		{
+			return $file(argumentCollection=fileArgs);
+		}
+		catch (any e)
+		{
+			// This is only tested on CF9. If you get an error on Railo, see if there is an equivalent error to
+			//   catch in another `catch` block.
+			if (e.Detail contains "zero-length")
+			{
+				this.addError(property=arguments.property, message="Can't upload an empty file");
+				return false;
+			}
+			else
+			{
+				$throw(argumentCollection=e);
+			}
+		}
 	</cfscript>
-	<cfreturn $file(argumentCollection=fileArgs) />
 </cffunction>
 
 <cffunction name="$saveFileToStorage" access="public" output="false" returntype="struct">
