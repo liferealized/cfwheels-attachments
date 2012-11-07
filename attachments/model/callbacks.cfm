@@ -5,7 +5,7 @@
 		if (!FindNoCase("multipart", cgi.content_type))
 			return false;
 			
-		if (!StructKeyExists(variables.wheels, "instance") || !StructKeyExists(variables.wheels.instance, "attachmentsSaved"))
+		if (!StructKeyExists(variables, "$attachmentsSaved"))
 		{
 			if (!StructKeyExists(variables, "$persistedProperties") || !StructKeyExists(variables.$persistedProperties, ListFirst(primaryKey())))
 				$updatePersistedProperties();
@@ -19,7 +19,7 @@
 					loc.success = loc.saved;
 			}
 			
-			variables.wheels.instance.attachmentsSaved = true;
+			variables.$attachmentsSaved = true;
 			
 			if (loc.success)
 			{
@@ -38,7 +38,7 @@
 		if (!FindNoCase("multipart", cgi.content_type))
 			return false;
 			
-		if (!StructKeyExists(variables.wheels.instance, "attachmentsSaved"))
+		if (!StructKeyExists(variables, "$attachmentsSaved"))
 		{
 			if (!StructKeyExists(variables, "$persistedProperties") || !StructKeyExists(variables.$persistedProperties, ListFirst(primaryKey())))
 				$updatePersistedProperties();
@@ -64,7 +64,7 @@
 					loc.success = !loc.attempted || loc.saved;
 			}
 			
-			variables.wheels.instance.attachmentsSaved = true;
+			variables.$attachmentsSaved = true;
 			
 			if (loc.saved)
 			{
