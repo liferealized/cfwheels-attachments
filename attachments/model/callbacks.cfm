@@ -84,7 +84,7 @@
 		loc.attachment = variables.wheels.class.attachments[arguments.property];
 		
 		// only try to upload something if we have the proper $attachment field
-		if (StructKeyExists(this, loc.attachment.property & "$attachment"))
+		if (StructKeyExists(this, loc.attachment.property & "$attachment") && StructKeyExists(form, this[loc.attachment.property & "$attachment"]) && Len(form[this[loc.attachment.property & "$attachment"]]))
 		{
 			loc.file = $saveFileToTempDirectory(argumentCollection=arguments);
 			loc.filePath = Replace(GetTempDirectory() & loc.file.ServerFile, "\", "/", "all");

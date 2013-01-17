@@ -1,0 +1,15 @@
+[1mdiff --git a/attachments/model/callbacks.cfm b/attachments/model/callbacks.cfm[m
+[1mindex 093a5a2..7cd8448 100644[m
+[1m--- a/attachments/model/callbacks.cfm[m
+[1m+++ b/attachments/model/callbacks.cfm[m
+[36m@@ -84,7 +84,7 @@[m
+ 		loc.attachment = variables.wheels.class.attachments[arguments.property];[m
+ 		[m
+ 		// only try to upload something if we have the proper $attachment field[m
+[31m-		if (StructKeyExists(this, loc.attachment.property & "$attachment"))[m
+[32m+[m		[32mif (StructKeyExists(this, loc.attachment.property & "$attachment") && StructKeyExists(form, this[loc.attachment.property & "$attachment"]) && Len(form[this[loc.attachment.property & "$attachment"]]))[m
+ 		{[m
+ 			loc.file = $saveFileToTempDirectory(argumentCollection=arguments);[m
+ 			loc.filePath = Replace(GetTempDirectory() & loc.file.ServerFile, "\", "/", "all");[m
+warning: LF will be replaced by CRLF in attachments/model/callbacks.cfm.
+The file will have its original line endings in your working directory.
