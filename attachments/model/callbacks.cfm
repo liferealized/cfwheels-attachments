@@ -224,7 +224,10 @@
 				
 			request.storage[loc.storageType].write(source=arguments.source, path=arguments.path);
 		}
-		
+
+		arguments.path = $urlEncodePath(arguments.path);
+		arguments.url = arguments.path;
+
 		StructDelete(arguments, "source", false);
 		StructDelete(arguments, "allowExtensions");
 		StructDelete(arguments, "blockExtensions");
@@ -260,7 +263,10 @@
 				
 			request.storage[loc.storageType].write(source=arguments.source, path=arguments.path);
 		}
-		
+
+		arguments.path = $urlEncodePath(arguments.path);
+		arguments.url = arguments.path;
+
 		StructDelete(arguments, "source", false);
 		StructDelete(arguments, "allowExtensions");
 		StructDelete(arguments, "blockExtensions");
@@ -358,6 +364,27 @@
 		}
 	</cfscript>
 	<cfreturn arguments />
+</cffunction>
+
+<cffunction name="$urlEncodePath" returntype="string" output="false" hint="Returns path with file name encoded.">
+	<cfargument name="path" type="string" required="true" hint="Path to encode.">
+	<cfscript>
+		var loc = {};
+
+		loc.pathParts = ListToArray(arguments.path, "/");
+		loc.numParts = ArrayLen(loc.pathParts);
+		loc.filename = loc.pathParts[loc.numParts];
+		loc.name = ListFirst(loc.filename, ".");
+		loc.newName = UrlEncodedFormat(loc.name);
+		loc.newFilename = Replace(loc.filename, loc.name, loc.newName);
+		loc.pathParts[loc.numParts] = loc.newFilename;
+		loc.newPath = ArrayToList(loc.pathParts, "/");
+
+		if (!loc.newPath.startsWith("http")) {
+			loc.newPath = "/" & loc.newPath;
+		}
+	</cfscript>
+	<cfreturn loc.newPath>
 </cffunction>
 
 <cffunction name="$validateAttachmentFileType" returntype="boolean" output="false" hint="Returns `true` if file extension matches `whitelist` (and `whitelist` is set). If no `whitelist` is set, returns `true` if file extension is not found in `blacklist`.">
