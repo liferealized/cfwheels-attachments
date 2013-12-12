@@ -5,7 +5,7 @@
 		if (!FindNoCase("multipart", cgi.content_type))
 			return false;
 			
-		if (!StructKeyExists(variables.wheels.instance, "attachmentsSaved"))
+		if (!StructKeyExists(variables, "$attachmentsSaved"))
 		{
 			if (!StructKeyExists(variables, "$persistedProperties") || !StructKeyExists(variables.$persistedProperties, ListFirst(primaryKey())))
 				$updatePersistedProperties();
@@ -19,7 +19,7 @@
 					loc.success = loc.saved;
 			}
 			
-			variables.wheels.instance.attachmentsSaved = true;
+			variables.$attachmentsSaved = true;
 			
 			if (loc.success)
 			{
@@ -38,7 +38,7 @@
 		if (!FindNoCase("multipart", cgi.content_type))
 			return false;
 			
-		if (!StructKeyExists(variables.wheels.instance, "attachmentsSaved"))
+		if (!StructKeyExists(variables, "$attachmentsSaved"))
 		{
 			if (!StructKeyExists(variables, "$persistedProperties") || !StructKeyExists(variables.$persistedProperties, ListFirst(primaryKey())))
 				$updatePersistedProperties();
@@ -64,7 +64,7 @@
 					loc.success = !loc.attempted || loc.saved;
 			}
 			
-			variables.wheels.instance.attachmentsSaved = true;
+			variables.$attachmentsSaved = true;
 			
 			if (loc.saved)
 			{
@@ -84,7 +84,7 @@
 		loc.attachment = variables.wheels.class.attachments[arguments.property];
 		
 		// only try to upload something if we have the proper $attachment field
-		if (StructKeyExists(this, loc.attachment.property & "$attachment"))
+		if (StructKeyExists(this, loc.attachment.property & "$attachment") && StructKeyExists(form, this[loc.attachment.property & "$attachment"]) && Len(form[this[loc.attachment.property & "$attachment"]]))
 		{
 			loc.file = $saveFileToTempDirectory(argumentCollection=arguments);
 			loc.filePath = Replace(GetTempDirectory() & loc.file.ServerFile, "\", "/", "all");
@@ -176,8 +176,26 @@
 			, result = "returnValue"
 			, nameconflict = "overwrite"
 		};
+
+		try
+		{
+			return $file(argumentCollection=fileArgs);
+		}
+		catch (any e)
+		{
+			// This is only tested on CF9. If you get an error on Railo, see if there is an equivalent error to
+			//   catch in another `catch` block.
+			if (e.Detail contains "zero-length")
+			{
+				this.addError(property=arguments.property, message="Can't upload an empty file");
+				return false;
+			}
+			else
+			{
+				$throw(argumentCollection=e);
+			}
+		}
 	</cfscript>
-	<cfreturn $file(argumentCollection=fileArgs) />
 </cffunction>
 
 <cffunction name="$saveFileToStorage" access="public" output="false" returntype="struct">
@@ -206,7 +224,10 @@
 				
 			request.storage[loc.storageType].write(source=arguments.source, path=arguments.path);
 		}
-		
+
+		arguments.path = $urlEncodePath(arguments.path);
+		arguments.url = arguments.path;
+
 		StructDelete(arguments, "source", false);
 		StructDelete(arguments, "allowExtensions");
 		StructDelete(arguments, "blockExtensions");
@@ -242,7 +263,10 @@
 				
 			request.storage[loc.storageType].write(source=arguments.source, path=arguments.path);
 		}
-		
+
+		arguments.path = $urlEncodePath(arguments.path);
+		arguments.url = arguments.path;
+
 		StructDelete(arguments, "source", false);
 		StructDelete(arguments, "allowExtensions");
 		StructDelete(arguments, "blockExtensions");
@@ -297,9 +321,11 @@
 		if (IsSimpleValue(this[arguments.property]) && IsJson(this[arguments.property]))
 			this[arguments.property] = DeserializeJson(this[arguments.property]);
 
-		loc.filePath = Replace(this[arguments.property].path, "\", "/", "all");
+		if (StructKeyExists(this[arguments.property], "path")) {
+			loc.filePath = Replace(this[arguments.property].path, "\", "/", "all");
 		
-		this[arguments.attachmentConfig.property] = $deleteFileFromStorage(source=loc.filePath, argumentCollection=arguments.attachmentConfig);
+			this[arguments.attachmentConfig.property] = $deleteFileFromStorage(source=loc.filePath, argumentCollection=arguments.attachmentConfig);
+		}
 	</cfscript>
 	<cfreturn true />
 </cffunction>
@@ -338,6 +364,27 @@
 		}
 	</cfscript>
 	<cfreturn arguments />
+</cffunction>
+
+<cffunction name="$urlEncodePath" returntype="string" output="false" hint="Returns path with file name encoded.">
+	<cfargument name="path" type="string" required="true" hint="Path to encode.">
+	<cfscript>
+		var loc = {};
+
+		loc.pathParts = ListToArray(arguments.path, "/");
+		loc.numParts = ArrayLen(loc.pathParts);
+		loc.filename = loc.pathParts[loc.numParts];
+		loc.name = ListFirst(loc.filename, ".");
+		loc.newName = UrlEncodedFormat(loc.name);
+		loc.newFilename = Replace(loc.filename, loc.name, loc.newName);
+		loc.pathParts[loc.numParts] = loc.newFilename;
+		loc.newPath = ArrayToList(loc.pathParts, "/");
+
+		if (!loc.newPath.startsWith("http")) {
+			loc.newPath = "/" & loc.newPath;
+		}
+	</cfscript>
+	<cfreturn loc.newPath>
 </cffunction>
 
 <cffunction name="$validateAttachmentFileType" returntype="boolean" output="false" hint="Returns `true` if file extension matches `whitelist` (and `whitelist` is set). If no `whitelist` is set, returns `true` if file extension is not found in `blacklist`.">

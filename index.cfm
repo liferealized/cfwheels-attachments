@@ -144,8 +144,8 @@
 </p>
 <pre>
 &lt;cfoutput&gt;
-	##startFormTag(action=&quot;create&quot;)##
-		##fileField(label=&quot;Upload an Attachment&quot; objectName=&quot;comment&quot;, property=&quot;attachment&quot;)##
+	##startFormTag(action=&quot;create&quot;, multipart=true)##
+		##fileField(label=&quot;Upload an Attachment&quot;, objectName=&quot;comment&quot;, property=&quot;attachment&quot;)##
 		##submitTag(value=&quot;Upload&quot;)##
 	##endFormTag()##
 &lt;/cfoutput&gt;</pre>
